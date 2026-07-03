@@ -308,7 +308,7 @@ function getActiveServiceIds(dateObj) {
 function calculateNextTrains(stopId, limit = 2) {
 	const now = getCurrentTime();
 	// Seconds since midnight local time
-	const currentSeconds =
+	let currentSeconds =
 		now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 	const activeServices = getActiveServiceIds(now);
 
@@ -370,10 +370,14 @@ function calculateNextTrains(stopId, limit = 2) {
 				const trainDeptSecs = stopSecs + i * headwaySecs;
 
 				// If it's valid and in the future (with a 60 second grace period for 'imminent')
-				if (
-					trainDeptSecs > currentSeconds - 60 &&
-					trainDeptSecs < currentSeconds + 7200
-				) {
+				let diff = trainDeptSecs - currentSeconds;
+
+				// handle next-day wrap (GTFS can exceed 24h logic)
+				if (diff < -7200) diff += 86400;
+				if (diff > 86400) continue;
+
+				// show trains from -1 min to +2 hours
+				if (diff > -60 && diff < 7200) {
 					// Look ahead 2 hrs
 					generatedDepartures.push({
 						timeSecs: trainDeptSecs,
@@ -393,7 +397,7 @@ function calculateNextTrains(stopId, limit = 2) {
 	for (let dep of generatedDepartures) {
 		if (upcoming[dep.dir].length < limit) {
 			// calc diff
-			const diffMins = Math.floor((dep.timeSecs - currentSeconds) / 60);
+			let diffMins = Math.floor(diff / 60);
 
 			upcoming[dep.dir].push({
 				absoluteTime: secondsToFormattedVal(dep.timeSecs),
@@ -510,5 +514,3 @@ function renderTrainRows(container, trains) {
 
 // Start
 init();
-
-
