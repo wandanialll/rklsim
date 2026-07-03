@@ -5,6 +5,7 @@ let trips = {};
 let stopTimes = [];
 let frequencies = [];
 let calendars = {};
+let tripFirstStopTimes = {}; // trip_id -> seconds of first stop's departure
 
 // State
 let pinnedStations = JSON.parse(localStorage.getItem("pinnedStations")) || [];
@@ -169,12 +170,28 @@ async function loadGtfsData() {
 		frequencies = rawFreqs;
 
 		// Stop Times: Group by stop_id for O(1) lookups: { stop_id: [stop_time_record, ...] }
+		// Also build tripFirstStopTimes: trip_id -> departure seconds of the first stop in the trip
 		stopTimes = {};
+		tripFirstStopTimes = {};
 		rawStopTimes.forEach((st) => {
-			sId = st.stop_id;
+			const sId = st.stop_id;
 			if (!stopTimes[sId]) stopTimes[sId] = [];
 			stopTimes[sId].push(st);
+
+			// Track first stop (lowest stop_sequence) per trip for GTFS frequency offsets
+			const seq = parseInt(st.stop_sequence);
+			const deptSecs = timeToSeconds(st.departure_time || st.arrival_time);
+			if (
+				!(st.trip_id in tripFirstStopTimes) ||
+				seq < tripFirstStopTimes[st.trip_id].seq
+			) {
+				tripFirstStopTimes[st.trip_id] = { seq, secs: deptSecs };
+			}
 		});
+		// Flatten to just seconds
+		for (const tid in tripFirstStopTimes) {
+			tripFirstStopTimes[tid] = tripFirstStopTimes[tid].secs;
+		}
 	} catch (err) {
 		console.error("Error loading GTFS data:", err);
 		mainLoading.textContent = "Error loading data. Please check console.";
@@ -341,35 +358,15 @@ function calculateNextTrains(stopId, limit = 2) {
 
 			if (!headwaySecs) continue;
 
-			// Stop time offset from frequency canonical start
-			// GTFS Spec: The vehicle leaves the first stop precisely at exactly start_time.
-			// But wait, the `stop_times` departure_time has absolute value too.
-			// Actually, GTFS exact times in `stop_times` act as RELATIVE offsets from the FIRST stop's time in `stop_times`.
-
-			// Wait, we need to know the offset from the trip's start to THIS stop.
-			// Since stop_times are grouped by station here, we need the 1st stop of this trip to find the offset?
-			// Usually, frequencies exact_times=0 means:
-			// Departure from this stop = (start_time + N*headway) + (stop_time - trip_start_stop_time).
-
-			// To simplify, if `stopSecs` is say 06:10:00, and frequency is 06:00:00 to 09:00:00.
-			// We just look for the first time >= currentSeconds that matches the headway pattern relative to stopSecs.
-
-			// Mathematically:
-			// interval pattern starts at (startSecs + (stopSecs - baseStartTime))
-			// But if we don't have baseStartTime cached, let's assume stopSecs is the base in the interval, shifted dynamically.
-			// Actuall GTFS spec says if exact_times=0 frequencies override the absolute times mostly,
-			// but the difference between stops is preserved.
-			// Let's guess baseStartTime from the stop_times logic (often it's the startSecs, or the actual stopSecs listed is within the first interval).
-
-			// For robust simple logic matching Malaysia GTFS:
-			// Let's assume `stopSecs` listed in stop_times is the FIRST run of the frequency block.
-			// So runs happen at: stopSecs, stopSecs + headway, stopSecs + 2*headway, ... up to (stopSecs + (endSecs - startSecs))
-
+			// GTFS-compliant (exact_times=0): departure = start_time + N*headway + stop_offset
+			// where stop_offset = this stop's template time - trip's first stop's template time
+			const tripFirstSecs = tripFirstStopTimes[trip.trip_id] ?? startSecs;
+			const stopOffset = stopSecs - tripFirstSecs;
 			const maxRuns = Math.floor((endSecs - startSecs) / headwaySecs);
 			for (let i = 0; i <= maxRuns; i++) {
-				const trainDeptSecs = stopSecs + i * headwaySecs;
+				const trainDeptSecs = startSecs + i * headwaySecs + stopOffset;
 
-				// If it's valid and in the future (with a 60 second grace period for 'imminent')
+				// If it's valid and near the current time
 				let diff = trainDeptSecs - currentSeconds;
 
 				// handle next-day wrap (GTFS can exceed 24h logic)
@@ -378,7 +375,6 @@ function calculateNextTrains(stopId, limit = 2) {
 
 				// show trains from -1 min to +2 hours
 				if (diff > -60 && diff < 7200) {
-					// Look ahead 2 hrs
 					generatedDepartures.push({
 						timeSecs: trainDeptSecs,
 						route: route,
@@ -396,8 +392,9 @@ function calculateNextTrains(stopId, limit = 2) {
 	// Filter to top limits
 	for (let dep of generatedDepartures) {
 		if (upcoming[dep.dir].length < limit) {
-			// calc diff
-			let diffMins = Math.floor(diff / 60);
+			let diff = dep.timeSecs - currentSeconds;
+			if (diff < -7200) diff += 86400;
+			const diffMins = Math.floor(diff / 60);
 
 			upcoming[dep.dir].push({
 				absoluteTime: secondsToFormattedVal(dep.timeSecs),
