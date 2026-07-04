@@ -454,55 +454,112 @@ function renderPinnedStations() {
 		renderTrainRows(dir1Container, data["1"]);
 
 		// Update titles based on headsigns if possible
-		updatePlatformTitle(
-			template.querySelector('.platform[data-dir="0"]'),
-			data["0"],
-			"Direction 1",
-		);
-		updatePlatformTitle(
-			template.querySelector('.platform[data-dir="1"]'),
-			data["1"],
-			"Direction 2",
-		);
+		// updatePlatformTitle(
+		// 	template.querySelector('.platform[data-dir="0"]'),
+		// 	data["0"],
+		// 	"Direction 1",
+		// );
+		// updatePlatformTitle(
+		// 	template.querySelector('.platform[data-dir="1"]'),
+		// 	data["1"],
+		// 	"Direction 2",
+		// );
 
 		pinnedContainer.appendChild(template);
 	});
 }
 
-function updatePlatformTitle(platformEl, trainList, fallback) {
-	const titleEl = platformEl.querySelector(".platform-title");
-	if (trainList.length > 0 && trainList[0].headsign) {
-		titleEl.textContent = `Towards ${trainList[0].headsign}`;
-	} else {
-		titleEl.textContent = fallback;
+// function updatePlatformTitle(platformEl, trainList, fallback) {
+// 	const titleEl = platformEl.querySelector(".platform-title");
+// 	if (trainList.length > 0 && trainList[0].headsign) {
+// 		titleEl.textContent = `${trainList[0].headsign}`;
+// 	} else {
+// 		titleEl.textContent = fallback;
+// 	}
+// }
+
+function getServiceContextKey(train) {
+	return `${train.routeShort || ""}::${train.headsign || ""}`;
+}
+
+function groupTrainsForDisplay(trains) {
+	const grouped = [];
+
+	for (let i = 0; i < trains.length; i++) {
+		const primary = trains[i];
+		const secondary = trains[i + 1];
+
+		if (
+			secondary &&
+			getServiceContextKey(primary) === getServiceContextKey(secondary)
+		) {
+			grouped.push({ primary, secondary });
+			i++;
+		} else {
+			grouped.push({ primary, secondary: null });
+		}
 	}
+
+	return grouped;
+}
+
+function getRelativeLabel(relativeMins) {
+	if (relativeMins <= 0) {
+		return { label: "Arriving", imminent: true };
+	}
+
+	if (relativeMins === 1) {
+		return { label: "1 min", imminent: true };
+	}
+
+	return { label: `${relativeMins} min`, imminent: false };
 }
 
 function renderTrainRows(container, trains) {
+	container.innerHTML = "";
+
 	if (trains.length === 0) {
 		container.innerHTML = '<div class="no-trains">No upcoming trains.</div>';
 		return;
 	}
 
-	trains.forEach((t) => {
-		const rowFrag = rowTemplate.content.cloneNode(true);
-		const badge = rowFrag.querySelector(".route-badge");
-		badge.textContent = t.routeShort;
-		badge.style.backgroundColor = t.routeColor;
-		badge.style.color = t.routeTextColor;
+	const groupedRows = groupTrainsForDisplay(trains);
 
-		rowFrag.querySelector(".train-headsign").textContent = t.headsign;
-		rowFrag.querySelector(".time-absolute").textContent = t.absoluteTime;
+	groupedRows.forEach(({ primary, secondary }) => {
+		const rowFrag = rowTemplate.content.cloneNode(true);
+		const rowEl = rowFrag.querySelector(".train-row");
+		const badge = rowFrag.querySelector(".route-badge");
+		badge.textContent = primary.routeShort;
+		badge.style.backgroundColor = primary.routeColor;
+		badge.style.color = primary.routeTextColor;
+
+		rowFrag.querySelector(".train-headsign").textContent = primary.headsign;
+		rowFrag.querySelector(".time-absolute").textContent = primary.absoluteTime;
 
 		const rel = rowFrag.querySelector(".time-relative");
-		if (t.relativeMins <= 0) {
-			rel.textContent = "Arriving";
-			rel.classList.add("imminent");
-		} else if (t.relativeMins === 1) {
-			rel.textContent = "1 min";
+		const { label, imminent } = getRelativeLabel(primary.relativeMins);
+		rel.textContent = label;
+		if (imminent) {
 			rel.classList.add("imminent");
 		} else {
-			rel.textContent = `${t.relativeMins} min`;
+			rel.classList.remove("imminent");
+		}
+
+		const secondaryTime = rowFrag.querySelector(".time-secondary");
+		if (secondary) {
+			const secondaryEta = getRelativeLabel(secondary.relativeMins);
+			secondaryTime.textContent = secondaryEta.label;
+			secondaryTime.classList.remove("hidden");
+			rowEl.classList.add("has-secondary");
+			if (secondaryEta.imminent) {
+				secondaryTime.classList.add("imminent");
+			} else {
+				secondaryTime.classList.remove("imminent");
+			}
+		} else {
+			secondaryTime.classList.add("hidden");
+			secondaryTime.classList.remove("imminent");
+			rowEl.classList.remove("has-secondary");
 		}
 
 		container.appendChild(rowFrag);

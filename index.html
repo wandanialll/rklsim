@@ -7,10 +7,6 @@
 		<link rel="stylesheet" href="styles.css" />
 	</head>
 	<body>
-		<header>
-			<h1>Rail Timing Board</h1>
-		</header>
-
 		<main>
 			<section class="settings-panel">
 				<label>
@@ -52,12 +48,12 @@
 				<div class="platforms-container">
 					<!-- Direction 0 -->
 					<div class="platform" data-dir="0">
-						<h3 class="platform-title">Direction 1</h3>
+						<!-- <h3 class="platform-title">Direction 1</h3> -->
 						<div class="trains-list"></div>
 					</div>
 					<!-- Direction 1 -->
 					<div class="platform" data-dir="1">
-						<h3 class="platform-title">Direction 2</h3>
+						<!-- <h3 class="platform-title">Direction 2</h3> -->
 						<div class="trains-list"></div>
 					</div>
 				</div>
@@ -71,8 +67,11 @@
 					<span class="train-headsign">Headsign</span>
 				</div>
 				<div class="train-time">
-					<span class="time-absolute">00:00</span>
-					<span class="time-relative">-- min</span>
+					<div class="time-primary">
+						<span class="time-absolute">00:00</span>
+						<span class="time-relative">-- min</span>
+					</div>
+					<span class="time-secondary hidden">00:00</span>
 				</div>
 			</div>
 		</template>

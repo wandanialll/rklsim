@@ -45,7 +45,7 @@ main {
 .search-section {
 	background: var(--card-bg);
 	padding: 1rem;
-	border-radius: 8px;
+	border-radius: 3px;
 	margin-bottom: 1rem;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
@@ -77,7 +77,7 @@ main {
 	padding: 0.75rem 1rem;
 	font-size: 1rem;
 	border: 1px solid var(--border);
-	border-radius: 4px;
+	border-radius: 3px;
 	outline: none;
 }
 
@@ -132,9 +132,9 @@ main {
 
 .station-card {
 	background: var(--card-bg);
-	border-radius: 8px;
-	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+	border-radius: 3px;
 	overflow: hidden;
+	border: 1px solid var(--border);
 }
 
 .station-header {
@@ -217,7 +217,7 @@ main {
 	background-color: var(--route-default);
 	color: white;
 	padding: 0.2rem 0.4rem;
-	border-radius: 4px;
+	border-radius: 3px;
 	font-size: 0.75rem;
 	font-weight: bold;
 	min-width: 35px;
@@ -236,7 +236,14 @@ main {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-end;
+	gap: 0.15rem;
 	flex-shrink: 0;
+}
+
+.time-primary {
+	display: flex;
+	align-items: baseline;
+	gap: 0.5rem;
 }
 
 .time-absolute {
@@ -253,6 +260,33 @@ main {
 .time-relative.imminent {
 	color: var(--secondary);
 	animation: pulse 1s infinite alternate;
+}
+
+.time-secondary {
+	font-size: 0.72rem;
+	color: #a2adb5;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	align-self: flex-end;
+	transition:
+		color 120ms ease,
+		transform 120ms ease;
+}
+
+.train-row.has-secondary .time-primary {
+	transform: translateY(1px);
+}
+
+.train-row.has-secondary .time-secondary::before {
+	content: "\2022";
+	display: inline-block;
+	margin-right: 0.3rem;
+	color: #b4c0cb;
+}
+
+.time-secondary.imminent {
+	color: #b75546;
+	font-weight: 600;
 }
 
 .no-trains {
