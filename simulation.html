@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Rail Network Simulation</title>
+		<link
+			rel="stylesheet"
+			href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+			crossorigin=""
+		/>
+		<link rel="stylesheet" href="simulation.css" />
+	</head>
+	<body>
+		<main class="sim-app">
+			<header class="top-bar">
+				<a class="back-link" href="index.html" aria-label="Back to timing board"
+					>Back</a
+				>
+				<div class="title-wrap">
+					<h1>Train Simulation</h1>
+					<p id="sim-clock" class="sim-clock">--:--:--</p>
+				</div>
+			</header>
+
+			<section class="controls" aria-label="Simulation controls">
+				<div class="control-row mode-row">
+					<label class="toggle-label" for="realtime-toggle">Realtime</label>
+					<input id="realtime-toggle" type="checkbox" checked />
+					<button id="play-pause" type="button" class="ghost-btn" disabled>
+						Pause
+					</button>
+				</div>
+				<div class="control-row">
+					<label for="sim-datetime">Simulated time</label>
+					<input id="sim-datetime" type="datetime-local" disabled />
+				</div>
+				<div class="control-row">
+					<label for="speed-slider"
+						>Speed <span id="speed-label">1.0x</span></label
+					>
+					<input
+						id="speed-slider"
+						type="range"
+						min="0.5"
+						max="30"
+						step="0.5"
+						value="1"
+						disabled
+					/>
+				</div>
+				<div class="control-row">
+					<h2>Lines</h2>
+					<div id="line-filters" class="line-filters"></div>
+				</div>
+			</section>
+
+			<section class="map-wrap" aria-label="Rail map simulation">
+				<div id="sim-loading" class="loading">
+					Loading GTFS simulation data...
+				</div>
+				<div id="map"></div>
+			</section>
+		</main>
+
+		<section
+			id="details-sheet"
+			class="details-sheet"
+			aria-live="polite"
+			aria-hidden="true"
+		>
+			<div class="sheet-handle"></div>
+			<div class="sheet-header">
+				<h2 id="sheet-title">Details</h2>
+				<button
+					id="sheet-close"
+					type="button"
+					class="ghost-btn"
+					aria-label="Close details"
+				>
+					Close
+				</button>
+			</div>
+			<div id="sheet-content" class="sheet-content"></div>
+		</section>
+
+		<script
+			src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+			crossorigin=""
+		></script>
+		<script src="simulation.js"></script>
+	</body>
+</html>

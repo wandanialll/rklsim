@@ -1,0 +1,281 @@
+:root {
+	--ink: #23313a;
+	--paper: #f4f6f7;
+	--surface: #ffffff;
+	--line: #d8dee2;
+	--accent: #1d6f7a;
+	--text: #27353d;
+	--muted: #697983;
+	--danger: #b33f62;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
+	background: var(--paper);
+	color: var(--text);
+}
+
+.sim-app {
+	display: flex;
+	flex-direction: column;
+	min-height: 100dvh;
+}
+
+.top-bar {
+	position: sticky;
+	top: 0;
+	z-index: 1400;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.8rem 1rem;
+	background: #1f3d4e;
+	color: #fff;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+
+.title-wrap h1 {
+	margin: 0;
+	font-size: 1.05rem;
+	letter-spacing: 0.02em;
+}
+
+.sim-clock {
+	margin: 0.15rem 0 0;
+	font-size: 0.86rem;
+	opacity: 0.9;
+}
+
+.back-link,
+.ghost-btn {
+	appearance: none;
+	border: 1px solid rgba(255, 255, 255, 0.45);
+	background: transparent;
+	color: inherit;
+	padding: 0.42rem 0.75rem;
+	border-radius: 999px;
+	font-weight: 600;
+	font-size: 0.83rem;
+	text-decoration: none;
+}
+
+.ghost-btn[disabled] {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.controls {
+	padding: 0.85rem 1rem 0.95rem;
+	background: var(--surface);
+	border-bottom: 1px solid var(--line);
+	display: grid;
+	gap: 0.75rem;
+}
+
+.control-row {
+	display: grid;
+	gap: 0.45rem;
+}
+
+.mode-row {
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+}
+
+.toggle-label {
+	font-weight: 700;
+}
+
+.controls label,
+.controls h2 {
+	font-size: 0.87rem;
+	margin: 0;
+	color: var(--ink);
+}
+
+.controls input[type="datetime-local"],
+.controls input[type="range"] {
+	width: 100%;
+}
+
+.line-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+
+.line-chip {
+	border: 1px solid rgba(31, 61, 78, 0.12);
+	padding: 0.36rem 0.62rem;
+	border-radius: 999px;
+	font-weight: 700;
+	font-size: 0.78rem;
+	cursor: pointer;
+	transition:
+		transform 120ms ease,
+		opacity 120ms ease,
+		filter 120ms ease;
+}
+
+.line-chip:active {
+	transform: translateY(1px);
+}
+
+.line-chip:hover {
+	filter: brightness(0.96);
+}
+
+.line-chip.is-off {
+	opacity: 0.42;
+	border-color: #9fb2bf;
+	background: #f0f3f6 !important;
+	color: #4b5e6a !important;
+}
+
+.map-wrap {
+	position: relative;
+	flex: 1;
+	min-height: 50dvh;
+}
+
+#map {
+	height: 100%;
+	min-height: 50dvh;
+	background: #f8fbfb;
+}
+
+.leaflet-control-attribution {
+	background: rgba(255, 255, 255, 0.66) !important;
+	font-size: 10px !important;
+}
+
+.loading {
+	position: absolute;
+	inset: 0;
+	background: rgba(248, 251, 251, 0.9);
+	display: grid;
+	place-items: center;
+	z-index: 1500;
+	font-weight: 700;
+	color: var(--ink);
+}
+
+.details-sheet {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1600;
+	background: var(--surface);
+	border-top-left-radius: 16px;
+	border-top-right-radius: 16px;
+	box-shadow: 0 -12px 24px rgba(0, 0, 0, 0.17);
+	transform: translateY(105%);
+	transition: transform 180ms ease;
+	padding: 0.35rem 1rem 1rem;
+	max-height: min(62dvh, 480px);
+	overflow: auto;
+}
+
+.details-sheet.open {
+	transform: translateY(0);
+}
+
+.sheet-handle {
+	width: 38px;
+	height: 5px;
+	border-radius: 99px;
+	background: #c3ced7;
+	margin: 0.3rem auto 0.45rem;
+}
+
+.sheet-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 0.55rem;
+}
+
+.sheet-header h2 {
+	margin: 0;
+	font-size: 1.02rem;
+}
+
+.sheet-content dl {
+	margin: 0;
+	display: grid;
+	gap: 0.48rem;
+}
+
+.sheet-content dt {
+	font-size: 0.76rem;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--muted);
+}
+
+.sheet-content dd {
+	margin: 0;
+	font-size: 0.95rem;
+	font-weight: 600;
+	line-height: 1.38;
+	white-space: pre-wrap;
+}
+
+.train-dot {
+	border-radius: 50%;
+	border: 2px solid #fff;
+	box-shadow: 0 0 0 1px rgba(35, 49, 58, 0.18);
+}
+
+.station-dot {
+	border-radius: 50%;
+	border: 1px solid rgba(255, 255, 255, 0.95);
+}
+
+@media (min-width: 760px) {
+	.sim-app {
+		display: grid;
+		grid-template-columns: 340px 1fr;
+		grid-template-rows: auto 1fr;
+	}
+
+	.top-bar {
+		grid-column: 1 / -1;
+	}
+
+	.controls {
+		border-right: 1px solid var(--line);
+		border-bottom: none;
+		overflow: auto;
+		max-height: calc(100dvh - 58px);
+	}
+
+	.map-wrap {
+		min-height: calc(100dvh - 58px);
+	}
+
+	#map {
+		min-height: calc(100dvh - 58px);
+	}
+
+	.details-sheet {
+		left: auto;
+		right: 1rem;
+		bottom: 1rem;
+		width: 360px;
+		border-radius: 16px;
+		transform: translateY(120%);
+	}
+
+	.details-sheet.open {
+		transform: translateY(0);
+	}
+}
