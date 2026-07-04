@@ -453,30 +453,9 @@ function renderPinnedStations() {
 		);
 		renderTrainRows(dir1Container, data["1"]);
 
-		// Update titles based on headsigns if possible
-		// updatePlatformTitle(
-		// 	template.querySelector('.platform[data-dir="0"]'),
-		// 	data["0"],
-		// 	"Direction 1",
-		// );
-		// updatePlatformTitle(
-		// 	template.querySelector('.platform[data-dir="1"]'),
-		// 	data["1"],
-		// 	"Direction 2",
-		// );
-
 		pinnedContainer.appendChild(template);
 	});
 }
-
-// function updatePlatformTitle(platformEl, trainList, fallback) {
-// 	const titleEl = platformEl.querySelector(".platform-title");
-// 	if (trainList.length > 0 && trainList[0].headsign) {
-// 		titleEl.textContent = `${trainList[0].headsign}`;
-// 	} else {
-// 		titleEl.textContent = fallback;
-// 	}
-// }
 
 function getServiceContextKey(train) {
 	return `${train.routeShort || ""}::${train.headsign || ""}`;
