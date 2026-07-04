@@ -11,6 +11,7 @@ const state = {
 	routePolylines: new Map(),
 	stationMarkers: new Map(),
 	trainMarkers: new Map(),
+	ignoreMapClickUntil: 0,
 };
 
 const gtfs = {
@@ -368,7 +369,10 @@ function createMap() {
 		},
 	).addTo(state.map);
 
-	state.map.on("click", () => closeDetails());
+	state.map.on("click", () => {
+		if (Date.now() < state.ignoreMapClickUntil) return;
+		closeDetails();
+	});
 }
 
 function createLineFilters() {
@@ -457,6 +461,7 @@ function drawStations() {
 
 		marker.stopId = stop.stop_id;
 		marker.on("click", (e) => {
+			state.ignoreMapClickUntil = Date.now() + 220;
 			if (e && e.originalEvent) {
 				L.DomEvent.stopPropagation(e.originalEvent);
 			}
@@ -651,6 +656,7 @@ function ensureTrainMarker(run) {
 		marker.runId = run.runId;
 		marker.currentRun = run;
 		marker.on("click", (e) => {
+			state.ignoreMapClickUntil = Date.now() + 220;
 			if (e && e.originalEvent) {
 				L.DomEvent.stopPropagation(e.originalEvent);
 			}
@@ -714,6 +720,19 @@ function toTowards(headsign) {
 	return raw;
 }
 
+function toFrom(headsign) {
+	const raw = (headsign || "").trim();
+	if (!raw) return "Unknown";
+
+	const fromToMatch = raw.match(/^from\s+(.+?)\s+to\s+.+$/i);
+	if (fromToMatch && fromToMatch[1]) return fromToMatch[1].trim();
+
+	const fromMatch = raw.match(/^from\s+(.+)$/i);
+	if (fromMatch && fromMatch[1]) return fromMatch[1].trim();
+
+	return raw;
+}
+
 function getUpcomingStopEvents(stopId, limit = 10) {
 	const nowDate = getCurrentDate();
 	const currentSecs = getCurrentSeconds();
@@ -726,6 +745,7 @@ function getUpcomingStopEvents(stopId, limit = 10) {
 		if (!trip || !state.visibleRoutes.has(trip.route_id)) continue;
 		if (!activeServices.has(trip.service_id)) continue;
 		const route = gtfs.routesById.get(trip.route_id);
+		const directionId = String(trip.direction_id ?? "0");
 
 		const seq = gtfs.stopTimesByTrip.get(template.trip_id);
 		if (!seq || !seq.length) continue;
@@ -752,6 +772,7 @@ function getUpcomingStopEvents(stopId, limit = 10) {
 						diff: arrDiff,
 						route,
 						headsign: trip.trip_headsign,
+						directionId,
 						headwaySecs: f.headwaySecs,
 					});
 				}
@@ -763,6 +784,7 @@ function getUpcomingStopEvents(stopId, limit = 10) {
 						diff: depDiff,
 						route,
 						headsign: trip.trip_headsign,
+						directionId,
 						headwaySecs: f.headwaySecs,
 					});
 				}
@@ -796,6 +818,35 @@ function closeDetails() {
 	els.detailsSheet.setAttribute("aria-hidden", "true");
 }
 
+function getDirectionLabelForStation(
+	stopId,
+	directionId,
+	events,
+	mode = "towards",
+) {
+	const fromEvent = events.find(
+		(e) => e.directionId === directionId && e.headsign,
+	);
+	if (fromEvent) {
+		return mode === "from"
+			? `From ${toFrom(fromEvent.headsign)}`
+			: `Towards ${toTowards(fromEvent.headsign)}`;
+	}
+
+	const templates = gtfs.stopTimesByStop.get(stopId) || [];
+	for (const t of templates) {
+		const trip = gtfs.tripsById.get(t.trip_id);
+		if (!trip) continue;
+		if (!state.visibleRoutes.has(trip.route_id)) continue;
+		if (String(trip.direction_id ?? "0") !== directionId) continue;
+		return mode === "from"
+			? `From ${toFrom(trip.trip_headsign)}`
+			: `Towards ${toTowards(trip.trip_headsign)}`;
+	}
+
+	return `Direction ${directionId}`;
+}
+
 function openTrainDetails(run) {
 	const currentStop = gtfs.stopsById.get(run.currentStopId);
 	const nextStop = gtfs.stopsById.get(run.nextStopId);
@@ -806,10 +857,6 @@ function openTrainDetails(run) {
 	showDetails(`${run.route?.route_short_name || "TR"} train`, [
 		["Line", routeName],
 		["Trip", run.trip.trip_id],
-		[
-			"Direction",
-			run.trip.direction_id === "1" ? "Direction 1" : "Direction 0",
-		],
 		["Towards", towards],
 		["Headway", formatHeadway(run.headwaySecs)],
 		[
@@ -835,12 +882,54 @@ function openStationDetails(stopId) {
 		}
 	}
 	const events = getUpcomingStopEvents(stopId, 8);
-	const nextArrival = events.find((e) => e.type === "Arrival");
-	const nextDeparture = events.find((e) => e.type === "Departure");
+	const nextArrivalDir0 = events.find(
+		(e) => e.type === "Arrival" && e.directionId === "0",
+	);
+	const nextArrivalDir1 = events.find(
+		(e) => e.type === "Arrival" && e.directionId === "1",
+	);
+	const nextDepartureDir0 = events.find(
+		(e) => e.type === "Departure" && e.directionId === "0",
+	);
+	const nextDepartureDir1 = events.find(
+		(e) => e.type === "Departure" && e.directionId === "1",
+	);
+	const dir0ArrivalLabel = getDirectionLabelForStation(
+		stopId,
+		"0",
+		events,
+		"from",
+	);
+	const dir1ArrivalLabel = getDirectionLabelForStation(
+		stopId,
+		"1",
+		events,
+		"from",
+	);
+	const dir0DepartureLabel = getDirectionLabelForStation(
+		stopId,
+		"0",
+		events,
+		"towards",
+	);
+	const dir1DepartureLabel = getDirectionLabelForStation(
+		stopId,
+		"1",
+		events,
+		"towards",
+	);
 	const timeline = events
 		.map(
 			(e) =>
-				`${e.type} ${secondsToTime(e.timeSecs).slice(0, 5)} (${formatMins(e.diff)}) - ${
+				`${e.type} ${
+					e.type === "Arrival"
+						? e.directionId === "0"
+							? dir0ArrivalLabel
+							: dir1ArrivalLabel
+						: e.directionId === "0"
+							? dir0DepartureLabel
+							: dir1DepartureLabel
+				} ${secondsToTime(e.timeSecs).slice(0, 5)} (${formatMins(e.diff)}) - ${
 					e.route?.route_short_name || "RT"
 				} towards ${toTowards(e.headsign)} [${formatHeadway(e.headwaySecs)}]`,
 		)
@@ -851,15 +940,27 @@ function openStationDetails(stopId) {
 		["Category", stop.category || "Station"],
 		["Visible lines", routeNames.length ? routeNames.join(", ") : "None"],
 		[
-			"Next arrival",
-			nextArrival
-				? `${secondsToTime(nextArrival.timeSecs).slice(0, 5)} (${formatMins(nextArrival.diff)})`
+			`Next arrival (${dir0ArrivalLabel})`,
+			nextArrivalDir0
+				? `${secondsToTime(nextArrivalDir0.timeSecs).slice(0, 5)} (${formatMins(nextArrivalDir0.diff)})`
 				: "None",
 		],
 		[
-			"Next departure",
-			nextDeparture
-				? `${secondsToTime(nextDeparture.timeSecs).slice(0, 5)} (${formatMins(nextDeparture.diff)})`
+			`Next arrival (${dir1ArrivalLabel})`,
+			nextArrivalDir1
+				? `${secondsToTime(nextArrivalDir1.timeSecs).slice(0, 5)} (${formatMins(nextArrivalDir1.diff)})`
+				: "None",
+		],
+		[
+			`Next departure (${dir0DepartureLabel})`,
+			nextDepartureDir0
+				? `${secondsToTime(nextDepartureDir0.timeSecs).slice(0, 5)} (${formatMins(nextDepartureDir0.diff)})`
+				: "None",
+		],
+		[
+			`Next departure (${dir1DepartureLabel})`,
+			nextDepartureDir1
+				? `${secondsToTime(nextDepartureDir1.timeSecs).slice(0, 5)} (${formatMins(nextDepartureDir1.diff)})`
 				: "None",
 		],
 		["Upcoming schedule", timeline || "No upcoming arrivals/departures"],
