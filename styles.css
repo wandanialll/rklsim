@@ -191,6 +191,7 @@ main {
 }
 
 .platform-separator {
+	display: block;
 	border: none;
 	border-top: 1px solid var(--border);
 	margin: 0.5rem 0;
@@ -205,10 +206,14 @@ main {
 	.platform[data-dir="0"] {
 		border-right: 1px solid var(--border);
 	}
+
+	.platform-separator {
+		display: none;
+	}
 }
 
 .platform {
-	padding: 1rem;
+	padding: 0.4rem 1rem;
 }
 
 .platform-title {
