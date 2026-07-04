@@ -42,7 +42,10 @@
 		<template id="station-card-template">
 			<div class="station-card" data-stop-id="">
 				<div class="station-header">
-					<h2 class="station-name">Station Name</h2>
+					<div class="station-header-main">
+						<h2 class="station-name">Station Name</h2>
+						<div class="station-route-badges"></div>
+					</div>
 					<button class="unpin-btn" aria-label="Unpin station">✖</button>
 				</div>
 				<div class="platforms-container">
@@ -50,6 +53,7 @@
 					<div class="platform" data-dir="0">
 						<div class="trains-list"></div>
 					</div>
+					<hr class="platform-separator" />
 					<!-- Direction 1 -->
 					<div class="platform" data-dir="1">
 						<div class="trains-list"></div>
@@ -61,7 +65,6 @@
 		<template id="train-row-template">
 			<div class="train-row">
 				<div class="train-route">
-					<span class="route-badge">Rt</span>
 					<span class="train-headsign">Headsign</span>
 				</div>
 				<div class="train-time">

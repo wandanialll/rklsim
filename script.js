@@ -440,6 +440,7 @@ function renderPinnedStations() {
 			unpinStation(st.stop_id);
 
 		const data = calculateNextTrains(st.stop_id, 2);
+		renderStationRouteBadges(template, data);
 
 		// Render direction 0
 		const dir0Container = template.querySelector(
@@ -454,6 +455,25 @@ function renderPinnedStations() {
 		renderTrainRows(dir1Container, data["1"]);
 
 		pinnedContainer.appendChild(template);
+	});
+}
+
+function renderStationRouteBadges(template, data) {
+	const badgeContainer = template.querySelector(".station-route-badges");
+	badgeContainer.innerHTML = "";
+
+	const seenRoutes = new Set();
+	[...(data["0"] || []), ...(data["1"] || [])].forEach((train) => {
+		const routeKey = `${train.routeShort || ""}|${train.routeColor || ""}|${train.routeTextColor || ""}`;
+		if (seenRoutes.has(routeKey)) return;
+
+		seenRoutes.add(routeKey);
+		const badge = document.createElement("span");
+		badge.className = "route-badge";
+		badge.textContent = train.routeShort || "RT";
+		badge.style.backgroundColor = train.routeColor;
+		badge.style.color = train.routeTextColor;
+		badgeContainer.appendChild(badge);
 	});
 }
 
@@ -494,6 +514,23 @@ function getRelativeLabel(relativeMins) {
 	return { label: `${relativeMins} min`, imminent: false };
 }
 
+function formatTowardsHeadsign(headsign) {
+	const raw = (headsign || "").trim();
+	if (!raw) return "Towards destination";
+
+	const toMatch = raw.match(/\bto\b\s+(.+)$/i);
+	if (toMatch && toMatch[1]) {
+		return `Towards ${toMatch[1].trim()}`;
+	}
+
+	if (/^towards\s+/i.test(raw)) {
+		const destination = raw.replace(/^towards\s+/i, "").trim();
+		return `Towards ${destination}`;
+	}
+
+	return `Towards ${raw}`;
+}
+
 function renderTrainRows(container, trains) {
 	container.innerHTML = "";
 
@@ -507,12 +544,9 @@ function renderTrainRows(container, trains) {
 	groupedRows.forEach(({ primary, secondary }) => {
 		const rowFrag = rowTemplate.content.cloneNode(true);
 		const rowEl = rowFrag.querySelector(".train-row");
-		const badge = rowFrag.querySelector(".route-badge");
-		badge.textContent = primary.routeShort;
-		badge.style.backgroundColor = primary.routeColor;
-		badge.style.color = primary.routeTextColor;
 
-		rowFrag.querySelector(".train-headsign").textContent = primary.headsign;
+		rowFrag.querySelector(".train-headsign").textContent =
+			formatTowardsHeadsign(primary.headsign);
 		rowFrag.querySelector(".time-absolute").textContent = primary.absoluteTime;
 
 		const rel = rowFrag.querySelector(".time-relative");
